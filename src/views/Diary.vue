@@ -31,8 +31,18 @@ import { Editor, Viewer } from '@toast-ui/vue-editor'
 
 const { dialog } = require('electron').remote
 const fs = require('fs')
-const Datastore = require('nedb-promises')
-const db = Datastore.create('diary.db')
+const sqlite3 = require('sqlite3').verbose()
+const db = new sqlite3.Database('../db/Diary.db', (err) => {
+  if (err) {
+    console.log(err.message)
+    console.log('파일경로가 잘못되었나')
+  }
+  db.close((err) => {
+    if (err) {
+      console.log(err.message)
+    }
+  })
+})
 
 export default {
   components: {
@@ -85,15 +95,22 @@ export default {
     },
     async DBRead () {
       console.log('DBRead')
-      const r = await db.findOne()
-      console.log(r)
     },
     async DBWrite () {
       console.log('DBWrite')
       this.diary.content = this.$refs.toastuiEditor.invoke('getHtml')
       console.log(this.diary.content)
-      const r = await db.insert(this.diary)
-      console.log(r)
+      await db.run('CREATE TABLE `Diary` ( `contents` TEXT, `date` TEXT )', (err) => {
+        if (err) {
+          console.log(err)
+        }
+      })
+      await db.run('INSERT INTO Diary title, content VALUES(' + this.diary.title + ', ' + this.diary.consont + ')', (err) => {
+        if (err) {
+          console.log(err)
+        }
+      })
+      await db.close()
     }
   }
 }
