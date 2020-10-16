@@ -2,20 +2,23 @@
     <v-container fluid>
         <v-card>
           <v-toolbar dense flat color="primary" dark>
-            <v-toolbar-title>문서편집기</v-toolbar-title>
+            <v-toolbar-title>일기장</v-toolbar-title>
             <v-spacer></v-spacer>
             <v-btn icon @click="editMode = !editMode">
               <v-icon>{{editMode ? 'mdi-eye' : 'mdi-pencil'}}</v-icon>
             </v-btn>
           </v-toolbar>
           <v-card-text>
-            <Editor v-if="editMode" ref="toastuiEditor" initialEditType="wysiwyg" v-model="text"/>
-            <Viewer v-if="!editMode && text != ''" :initialValue="text"/>
+            <v-text-field label="제목" v-model="diary.title"></v-text-field>
+            <Editor v-if="editMode" ref="toastuiEditor" initialEditType="wysiwyg" />
+            <Viewer v-if="!editMode && text != ''" :initialValue="diary.content"/>
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn @click="read">read</v-btn>
-            <v-btn @click="write">write</v-btn>
+            <v-btn @click="FileRead">FileRead</v-btn>
+            <v-btn @click="FileWrite">FileWrite</v-btn>
+            <v-btn @click="DBRead">DBRead</v-btn>
+            <v-btn @click="DBWrite">DBWrite</v-btn>
           </v-card-actions>
         </v-card>
     </v-container>
@@ -28,23 +31,29 @@ import { Editor, Viewer } from '@toast-ui/vue-editor'
 
 const { dialog } = require('electron').remote
 const fs = require('fs')
+const Datastore = require('nedb-promises')
+const db = Datastore.create('diary.db')
 
 export default {
   components: {
     Editor,
     Viewer
   },
+  created () {
+  },
   data () {
     return {
-      text: '',
+      diary: {
+        title: '',
+        content: ''
+      },
       editMode: true
     }
   },
   mounted () {
-    console.log(dialog)
   },
   methods: {
-    read () {
+    FileRead () {
       const options = {
         filters: [
           {
@@ -56,11 +65,10 @@ export default {
       }
       const r = dialog.showOpenDialogSync(options)
       if (!r) return
-      this.text = fs.readFileSync(r[0]).toString()
-      console.log(this.text)
-      this.$refs.toastuiEditor.invoke('setHtml', this.text)
+      this.diary.content = fs.readFileSync(r[0]).toString()
+      this.$refs.toastuiEditor.invoke('setHtml', this.diary.content)
     },
-    write () {
+    FileWrite () {
       const options = {
         filters: [
           {
@@ -70,14 +78,22 @@ export default {
           }
         ]
       }
-      console.log('---------')
-      console.log(this.text)
-      console.log(this.$refs.toastuiEditor.invoke('getHtml'))
-      console.log('---------')
-      this.text = this.$refs.toastuiEditor.invoke('getHtml')
+      this.diary.content = this.$refs.toastuiEditor.invoke('getHtml')
       const r = dialog.showSaveDialogSync(options)
       if (!r) return
-      fs.writeFileSync(r, this.text)
+      fs.writeFileSync(r, this.diary.content)
+    },
+    async DBRead () {
+      console.log('DBRead')
+      const r = await db.findOne()
+      console.log(r)
+    },
+    async DBWrite () {
+      console.log('DBWrite')
+      this.diary.content = this.$refs.toastuiEditor.invoke('getHtml')
+      console.log(this.diary.content)
+      const r = await db.insert(this.diary)
+      console.log(r)
     }
   }
 }

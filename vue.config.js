@@ -6,10 +6,10 @@ module.exports = {
     electronBuilder: {
       nodeIntegration: true,
       builderOptions: {
-        appID : "com.ve.app",
-        nsis : {
-          createDesktopShortcut : true
-        },
+        appID: 'com.ve.app',
+        nsis: {
+          createDesktopShortcut: true
+        }
       }
     }
   }
